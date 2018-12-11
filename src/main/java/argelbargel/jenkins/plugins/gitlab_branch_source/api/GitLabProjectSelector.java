@@ -37,4 +37,11 @@ public enum GitLabProjectSelector {
     public String id() {
         return id;
     }
+
+    public String urlId() {
+        if (id == "visible") {
+            return "owned";
+        }
+        return id;
+    }
 }

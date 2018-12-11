@@ -137,14 +137,37 @@ public final class GitLabAPI {
     }
 
     public GitLabMergeRequest getMergeRequest(int projectId, int mergeRequestId) throws GitLabAPIException {
+        String tailUrl = "/projects/" + projectId + "/merge_request/" + mergeRequestId;
+        GitLabMergeRequest mr;
         try {
-            String tailUrl = "/projects/" + projectId + "/merge_requests/" + mergeRequestId;
-            return delegate.retrieve().to(tailUrl, GitLabMergeRequest.class);
+            mr = delegate.retrieve().to(tailUrl, GitLabMergeRequest.class);
         } catch (FileNotFoundException e) {
             throw new NoSuchElementException("unknown merge-request for project " + projectId + ": " + mergeRequestId);
         } catch (Exception e) {
             throw new GitLabAPIException(e);
         }
+        if (mr.getMergeStatus() == null) {
+            mr.setMergeStatus("can_be_merged");
+        }
+        if (mr.getWebUrl() == null) {
+            GitLabProject project = getProject(projectId);
+            mr.setWebUrl(project.getWebUrl() + "/merge_requests/" + mr.getIid());
+        }
+        if (mr.getSha() == null) {
+            GitlabCommit[] commits;
+            try {
+                String commitsUrl = tailUrl + "/commits";
+                commits = delegate.retrieve().to(commitsUrl, GitlabCommit[].class);
+            } catch (Exception e) {
+                throw new GitLabAPIException(e);
+            }
+            try {
+                mr.setSha(commits[0].getId());
+            } catch (IndexOutOfBoundsException e) {
+                throw new GitLabAPIException(e);
+            }
+        }
+        return mr;
     }
 
     public List<GitLabProject> findProjects(String group, GitLabProjectSelector selector, GitLabProjectVisibility visibility, String searchPattern) throws GitLabAPIException {
@@ -303,7 +326,7 @@ public final class GitLabAPI {
 
     private String projectUrl(GitLabProjectSelector selector, GitLabProjectVisibility visibility, String searchPattern) {
         StringBuilder urlBuilder = new StringBuilder(GitlabProject.URL)
-                .append(PATH_SEP).append(selector.id()).append("?membership=true");
+                .append(PATH_SEP).append(selector.urlId()).append("?membership=true");
 
         if (!ALL.equals(visibility)) {
             urlBuilder.append("&visibility=").append(visibility.id());

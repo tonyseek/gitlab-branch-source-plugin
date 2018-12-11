@@ -6,6 +6,7 @@ import argelbargel.jenkins.plugins.gitlab_branch_source.api.GitLabAPIException;
 import argelbargel.jenkins.plugins.gitlab_branch_source.api.GitLabProject;
 
 import java.util.List;
+import java.util.ArrayList;
 
 
 public class GroupProjectQuery extends ProjectQuery {
@@ -18,6 +19,11 @@ public class GroupProjectQuery extends ProjectQuery {
 
     @Override
     protected List<GitLabProject> execute(GitLabAPI api) throws GitLabAPIException {
-        return api.findProjects(group, getSelector(), getVisibility(), getSearchPattern());
+        List<GitLabProject> origin = api.findProjects(group, getSelector(), getVisibility(), getSearchPattern());
+        List<GitLabProject> replacement = new ArrayList<GitLabProject>(origin.size());
+        for (GitLabProject project : origin) {
+            replacement.add(api.getProject(project.getId()));
+        }
+        return replacement;
     }
 }
