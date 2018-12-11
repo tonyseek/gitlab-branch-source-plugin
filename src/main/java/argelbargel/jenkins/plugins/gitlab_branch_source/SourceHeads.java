@@ -281,7 +281,7 @@ class SourceHeads {
     }
 
     private void log(@Nonnull TaskListener listener, String message) {
-        listener.getLogger().format(message + "\n");
+        listener.getLogger().format("%s%n", message);
     }
 
     private Map<Integer, String> branchesWithMergeRequests(TaskListener listener) throws IOException, InterruptedException {
